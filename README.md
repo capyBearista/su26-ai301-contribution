@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** capyBearista  
 **Issue:** https://github.com/Eventual-Inc/Daft/issues/3792  
-**Status:** Phase II Complete
+**Status:** Phase III Complete
 
 ---
 
@@ -121,36 +121,69 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [x] Basic overlay, default `len` (`overlay("AAAAAAAAAA", "BBB", 3)` -> `"AABBBAAAAA"`)
+- [x] Explicit `len` matching `len(replace)`
+- [x] `len` smaller than `replace` (replace grows the result)
+- [x] `len` larger than `replace` (replace shrinks the result)
+- [x] `pos` at start (`pos=1`)
+- [x] `pos` at end
+- [x] `pos` past the end of `src` (clamped, `replace` is appended)
+- [x] `pos=0` clamped to `1`
+- [x] Empty `replace`
+- [x] Empty `src`
+- [x] Multiple rows in a single column
+- [x] Null `pos` propagates a null result row
+- [x] Non-string `src` raises
+
+These are the Python tests in `tests/expressions/test_overlay.py` (13 tests, all passing). The Rust unit tests in `src/daft-functions-utf8/src/overlay.rs` cover the same `overlay_str` kernel directly (8 tests, all passing).
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [x] Rust unit tests (`cargo test -p daft-functions-utf8 --no-default-features --lib overlay`): 8 of 8 pass.
+- [x] Python tests (`DAFT_RUNNER=native .venv/bin/pytest tests/expressions/test_overlay.py`): 13 of 13 pass.
+- [x] Regression sweep on the existing utf8 suite (`DAFT_RUNNER=native .venv/bin/pytest tests/expressions/test_utf8.py tests/recordbatch/utf8`): 116 of 116 pass, no regressions.
 
 ### Manual Testing
 
-[What you tested manually and results]
+- Built the Rust extension (`make build`, ~14s incremental) and imported `from daft.functions import overlay` (the import that raised `ImportError` in Phase II is now successful).
+- Ran a smoke test: `daft.from_pydict({"src": ["AAAAAAAAAA"]}).with_column("o", overlay(daft.col("src"), "BBB", 3)).collect()` returns `{"src": ["AAAAAAAAAA"], "o": ["AABBBAAAAA"]}`.
+- Compared against a working function (`replace`): same DataFrame path, returns `"XXXXXXXXXX"` for `replace("AAAAAAAAAA", "A", "X")`, confirming the runner, registry, and wiring are healthy.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+### Phase III Progress
 
-[What you built this week, challenges faced, decisions made]
+**What I built:**
+- The Rust UDF `Overlay` in `src/daft-functions-utf8/src/overlay.rs`, modeled on the existing multi-arg utf8 UDFs (`replace`, `substring_index`, `substr`). It takes `(src: Utf8, replace: Utf8, pos: Int64, len: Int64?)` and produces a `Utf8` array. The kernel iterates row-by-row, broadcasting scalar `pos`/`len` to the column length.
+- Registration in `src/daft-functions-utf8/src/lib.rs` (three lines: `mod overlay;`, `pub use overlay::*;`, `parent.add_fn(Overlay);`).
+- Python wrapper `overlay(expr, replace, pos, len=None)` in `daft/functions/str.py`, with a docstring example. Re-exported from `daft/functions/__init__.py`.
+- 8 Rust unit tests covering the kernel directly (`overlay_str`).
+- 13 Python tests covering the user-facing path (`daft.from_pydict` + `df.select(overlay(...))`).
 
-### Week [Y] Progress
-
-[Continue documenting as you work]
+**Challenges faced:**
+- My first Rust compile had 7 errors (closure return types, `&DataType` vs `DataType` comparisons, `Option<&&Series>` from a stray `.as_ref()`). I restructured the implementation so the typed kernel takes `&Utf8Array`/`&Int64Array` directly, leaving the `Series -> typed array` unwrapping in the `call()` method. After that, the code compiled cleanly.
+- The first two Rust unit tests I wrote had wrong expected values (I miscounted PySpark's "len larger/smaller than replace" cases). The implementation was correct, the test fixtures were wrong. Fixed the expectations and re-ran.
+- During the build, `rustfmt` silently reformatted ~40 pre-existing `.rs` files in `daft-functions-utf8` because the repo's `rustfmt.toml` enables unstable features and the existing code was not compliant. I reverted those unrelated files before committing so the Phase III commit is scoped to the `overlay` feature.
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:** 5 total, all scoped to the `overlay` feature.
+  - `src/daft-functions-utf8/src/overlay.rs` (new, 249 lines: UDF + 8 tests)
+  - `src/daft-functions-utf8/src/lib.rs` (3 lines: register `Overlay`)
+  - `daft/functions/str.py` (40 lines: `overlay()` wrapper)
+  - `daft/functions/__init__.py` (2 lines: import + `__all__` entry)
+  - `tests/expressions/test_overlay.py` (new, 91 lines: 13 tests)
+- **Key commits on the branch:** https://github.com/capyBearista/Daft/commits/feat-overlay-3792
+  - `1e5e717e8` - Phase II reproduction script (`repro_overlay.py`).
+  - `4e8c03bc9` - Phase III implementation (5 files, 385 insertions, all tests passing).
+- **Approach decisions:**
+  - Two-commit branch (Phase II repro + Phase III implementation) to keep the history clean and easy to review.
+  - The Rust kernel uses character-based indexing for consistency with the rest of Daft's string functions. Out-of-range `pos` and `pos=0` are clamped.
+  - The `len` argument defaults to `len(replace)`, matching PySpark.
+  - For simplicity and consistency with `replace`, I did NOT add a chained `Expression.overlay()` method; users call `daft.functions.overlay(col("src"), "X", 3)` or `from daft.functions import overlay`.
+  - I did not modify any pre-existing files other than the 3-line registration in `lib.rs`.
 
 ---
 
