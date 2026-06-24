@@ -1,15 +1,19 @@
-# Contribution [#]: [Issue Title]
+# Contribution 1: Add `overlay` String Expression to Daft
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** 1  
+**Student:** capyBearista  
+**Issue:** https://github.com/Eventual-Inc/Daft/issues/3792  
+**Status:** Phase I Complete
 
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+Daft is building parity with PySpark's string functions one function at a time, and `overlay` is on the issue's unchecked list with no one else claiming it in the thread. `overlay(src, replace, pos[, len])` writes `replace` over `src` starting at position `pos`, replacing `len` characters — a well-scoped, multi-argument string operation with clear PySpark-defined semantics.
+
+I chose it because it's bounded in scope (single function, clear acceptance criteria), the repo has a documented "add a new expression" pattern with recent merged precedents (`strip`, `concat_ws`), and it lets me practice the full Rust-UDF to Python-binding to test workflow on a real, actively maintained project. It matches my goal of contributing a concrete, reviewable change rather than chasing something sprawling or already half-attempted.
+
+**Issue comment:** https://github.com/Eventual-Inc/Daft/issues/3792#issuecomment-4786037852
 
 ---
 
