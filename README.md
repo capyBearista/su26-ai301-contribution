@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** capyBearista  
 **Issue:** https://github.com/Eventual-Inc/Daft/issues/3792  
-**Status:** Phase III Complete
+**Status:** Phase IV Complete
 
 ---
 
@@ -189,15 +189,14 @@ These are the Python tests in `tests/expressions/test_overlay.py` (13 tests, all
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** https://github.com/Eventual-Inc/Daft/pull/7189
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:** Adds `daft.functions.overlay`, backed by a new Rust UTF-8 scalar UDF and Python wrapper. The PR includes tests for default and explicit `len`, position handling, empty strings, nulls, and type errors.
 
 **Maintainer Feedback:**
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
+- July 1, 2026: PR opened and awaiting maintainer review. No requested changes yet.
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+**Status:** Awaiting review
 
 ---
 
@@ -205,20 +204,28 @@ These are the Python tests in `tests/expressions/test_overlay.py` (13 tests, all
 
 ### Technical Skills Gained
 
-[What you learned technically]
+- Learned the end-to-end path for adding a Daft string expression: Rust UDF implementation, registry wiring, Python wrapper, export, and expression tests.
+- Got more comfortable reading Rust compiler errors and restructuring code around Daft's `Series` and typed array APIs.
+- Learned how Daft's Python functions call into registered Rust scalar functions by name.
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+- The hardest part was getting the Rust types right. My first version mixed up `Series`, typed arrays, references, and optional inputs. I fixed this by separating the `Series` unwrapping in `call()` from a typed kernel that works with `Utf8Array` and `Int64Array`.
+- I also had to clean up unrelated formatting drift after a build step reformatted pre-existing Rust files. I reverted those unrelated changes so the PR stayed focused on `overlay`.
+- Before opening the PR, I removed the Phase II reproduction script from the PR diff so the upstream submission only included the feature implementation and tests.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+- I would check the project's formatting behavior earlier and avoid any command that can rewrite unrelated files.
+- I would keep reproduction artifacts separate from the upstream PR branch, or remove them before the implementation commit, so the final diff is cleaner from the start.
+- I would ask for maintainer confirmation earlier before building, since the tracking issue asks contributors to request assignment for individual functions.
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- Daft issue: https://github.com/Eventual-Inc/Daft/issues/3792
+- Pull request: https://github.com/Eventual-Inc/Daft/pull/7189
+- Daft contributing guide: https://github.com/Eventual-Inc/Daft/blob/main/CONTRIBUTING.md
+- PySpark string function reference: https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html#string-functions
+- Existing Daft string functions used as patterns: `replace`, `strip`, `substring_index`, and `concat_ws`
